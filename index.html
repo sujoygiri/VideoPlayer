@@ -1,0 +1,105 @@
+<!--index.html-->
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+        <title>Hello World!</title>
+        <link rel="stylesheet" href="styles.css">
+    </head>
+
+    <body>
+        <div class="main">
+            <div class="container">
+                <div class="video_player_container">
+                    <video id="videoPlayer" src="C:/Users/sujoy/Videos/Anime/Shinunoga_EWa.mp4"></video>
+                </div>
+                <div class="video_player_control_container">
+                    <div class="progressbar_container">
+                        <div class="progress_bar"></div>
+                    </div>
+                    <div class="media_control_container">
+                        <div class="playback_control_container">
+                            <div class="previous_video">
+                                <span class="btn previous_video_btn" role="button">
+                                    <img src="./assets/icons/skip_previous.svg" alt="" srcset="">
+                                </span>
+                            </div>
+                            <div class="play_pause">
+                                <span class="btn play_pause_btn" role="button">
+                                    <img src="./assets/icons/play_circle.svg" alt="" srcset="">
+                                </span>
+                            </div>
+                            <div class="next_video">
+                                <span class="btn next_video_btn" role="button">
+                                    <img src="./assets/icons/skip_next.svg" alt="" srcset="">
+                                </span>
+                            </div>
+                            <div class="volume_control">
+                                <span class="btn volume_control_btn" role="button">
+                                    <img src="./assets/icons/volume_up.svg" alt="" srcset="">
+                                </span>
+                                <input type="range" min="0" max="1" step="0.01">
+                            </div>
+                            <div class="time">
+                                <span>00:00 | 00:00</span>
+                            </div>
+                            <div class="open_file_container">
+                                <span class="btn open_file_btn" role="button">
+                                    <img src="./assets/icons/open_dialog.svg" alt="" srcset="">
+                                </span>
+                            </div>
+                        </div>
+                        <div class="additional_control_container">
+                            <div class="subtitle">
+                                <span class="btn subtitle_btn">
+                                    <img src="./assets//icons/subtitles_no_fill.svg" alt="" srcset="">
+                                </span>
+                            </div>
+                            <div class="pip">
+                                <span class="btn pip_btn">
+                                    <img src="./assets/icons/pip.svg" alt="" srcset="">
+                                </span>
+                            </div>
+                            <div class="fullscreen">
+                                <span class="btn fullscreen_btn">
+                                    <img src="./assets/icons/open_in_full.svg" alt="" srcset="">
+                                </span>
+                            </div>
+                            <div class="browse_media_file">
+                                <span class="btn browse_media_file_btn" role="button">
+                                    <img src="./assets//icons/folder_open.svg" alt="" srcset="">
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="playlist_items_container">
+                    <!-- <div class="close_btn">
+                        <img src="./assets/icons/cancel.svg" alt="" srcset="">
+                    </div> -->
+                    <div class="playlist_navigation">
+                        <div class="browse_files">
+                            <span role="button">Browse</span>
+                        </div>
+                        <div class="current_playlist">
+                            <span role="button">Current Playlist</span>
+                        </div>
+                    </div>
+                    <div class="content_lists">
+                        <div class="browse_content_list">
+                            <ul></ul>
+                        </div>
+                        <div class="current_playlist_items">
+                            <ul></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script src="./renderer.js"></script>
+    </body>
+
+</html>

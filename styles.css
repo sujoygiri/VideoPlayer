@@ -173,7 +173,6 @@ body {
 .drive_path {
   display: flex;
   align-items: center;
-  padding: 0.5rem;
 }
 
 .drive_path:hover {
@@ -187,4 +186,8 @@ body {
   align-items: center;
   font-size: small;
   margin-right: 0.4rem;
+}
+
+.active_playlist_file {
+  background-color: rgb(73, 136, 136);
 }

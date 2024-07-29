@@ -18,6 +18,11 @@ const browseContentListItemNode = document.querySelector(".browse_content_list u
 const currentPlayListNode = document.querySelector(".current_playlist_items");
 const currentPlayListItemsNode = document.querySelector(".current_playlist_items ul");
 
+let currentActivePlaylistItem = null;
+let browseFileListItem = null;
+let totalCurrentPlaylistItem = 0;
+let currentActivePlaylistItemIndex = 0;
+
 const audioFileIconPath = "./assets/icons/audio_file.svg";
 const videoFileIconPath = "./assets/icons/video_file.svg";
 const folderIconPath = "./assets/icons/folder.svg";
@@ -84,7 +89,11 @@ function handelFileOpen() {
 function handelProgressBarUpdate() {
     videoPlayer.addEventListener("timeupdate", async () => {
         progressBarNode.style.width = (videoPlayer.currentTime / videoPlayer.duration) * 100 + '%';
-        if (videoPlayer.currentTime === videoPlayer.duration) {
+        if (videoPlayer.currentTime === videoPlayer.duration && totalCurrentPlaylistItem > 1 && currentActivePlaylistItemIndex < totalCurrentPlaylistItem) {
+            currentActivePlaylistItemIndex += 1;
+            await handelNextPlaylistItemPlay(currentActivePlaylistItemIndex);
+        }
+        if (videoPlayer.currentTime === videoPlayer.duration && (totalCurrentPlaylistItem <= 1 || currentActivePlaylistItemIndex === totalCurrentPlaylistItem)) {
             playPauseBtnNode.src = './assets/icons/play_circle.svg';
             progressBarNode.style.width = `0%`;
             await videoPlayer.pause();
@@ -131,23 +140,43 @@ function handelControlPanelVisibility() {
     });
 }
 
+async function handelNextPlaylistItemPlay(nextPlaylistItemIndex) {
+    currentActivePlaylistItem.classList.remove("active_playlist_file");
+    currentActivePlaylistItem = currentPlayListItemsNode.childNodes[nextPlaylistItemIndex];
+    videoPlayer.src = currentActivePlaylistItem.dataset.path;
+    await videoPlayer.play();
+    playPauseBtnNode.src = './assets/icons/pause_circle.svg';
+    currentActivePlaylistItem.classList.add("active_playlist_file");
+}
+
 async function handelCurrentPlaylist(filePath) {
     let playlistContentItems = "";
     let playListInfo = await window.electronAPI.getCurrentPlayList(filePath);
+    totalCurrentPlaylistItem = playListInfo.length - 1 || 0;
     currentPlayListItemsNode.innerHTML = "";
     playListInfo.forEach(file => {
-        playlistContentItems += `
-        <li class="drive_path" data-path="${file.path}" data-type="${file.type}" data-subtype="${file.subType}">
-            <span><img src="${file.subType === 'audio' ? audioFileIconPath : videoFileIconPath}"></span>
-            <span>${file.name}</span>
-        </li>`;
+        playlistContentItems += `<li class="drive_path" data-name="${file.name}" data-path="${file.path}" data-type="${file.type}" data-subtype="${file.subType}"><img src="${file.subType === 'audio' ? audioFileIconPath : videoFileIconPath}"><span>${file.name}</span></li>`;
     });
     currentPlayListItemsNode.innerHTML = playlistContentItems;
-    currentPlayListItemsNode.childNodes.forEach(listItem => {
+    currentPlayListItemsNode.childNodes.forEach((listItem, index) => {
+        let { name } = listItem.childNodes[0].parentElement.dataset;
+        if (name === browseFileListItem.dataset.name) {
+            listItem.childNodes[0].parentElement.classList.add("active_playlist_file");
+            currentActivePlaylistItem = listItem.childNodes[0].parentElement;
+            currentActivePlaylistItemIndex = index;
+        }
+        // console.log(listItem.childNodes[0].parentElement.classList);
+        // console.log(currentActivePlaylistItem);
         listItem.addEventListener("click", async (event) => {
             let type = event.currentTarget.dataset.type;
             let subType = event.currentTarget.dataset.subtype;
             let currentPath = event.currentTarget.dataset.path;
+            currentActivePlaylistItem.classList.remove("active_playlist_file");
+            currentActivePlaylistItem = event.target.parentElement;
+            if (event.target.parentElement.textContent === currentActivePlaylistItem.dataset.name) {
+                currentActivePlaylistItem.classList.add("active_playlist_file");
+                currentActivePlaylistItemIndex = index;
+            };
             videoPlayer.src = currentPath;
             await videoPlayer.play();
             playPauseBtnNode.src = './assets/icons/pause_circle.svg';
@@ -160,14 +189,7 @@ async function handelBrowse(currentPath) {
     let directoryInfo = await window.electronAPI.getDirectoryInfo(currentPath);
     browseContentListItemNode.innerHTML = "";
     directoryInfo.forEach(file => {
-        browseContentListItems += `
-            <li class="drive_path" data-path="${file.path}" data-type="${file.type}" data-subtype="${file.subType}">
-                <span><img src="${file.type === 'folder' ?
-                folderIconPath : file.subType === 'audio' ?
-                    audioFileIconPath : videoFileIconPath}">
-                </span>
-                <span>${file.name}</span> 
-            </li>`;
+        browseContentListItems += `<li class="drive_path" data-name="${file.name}" data-path="${file.path}" data-type="${file.type}" data-subtype="${file.subType}"><img src="${file.type === 'folder' ? folderIconPath : file.subType === 'audio' ? audioFileIconPath : videoFileIconPath}"><span>${file.name}</span></li>`;
     });
     browseContentListItemNode.innerHTML = browseContentListItems;
     browseContentListItemNode.childNodes.forEach(childNode => {
@@ -183,6 +205,7 @@ async function handelBrowse(currentPath) {
                 videoPlayer.src = currentPath;
                 await videoPlayer.play();
                 playPauseBtnNode.src = './assets/icons/pause_circle.svg';
+                browseFileListItem = event.target.parentElement;
                 await handelCurrentPlaylist(currentPath);
             }
             // event.preventDefault();

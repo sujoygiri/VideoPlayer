@@ -54,7 +54,7 @@ body {
 .progress_bar {
   height: 4px;
   width: 0%;
-  background-color: rgb(1, 75, 139);
+  background-color: rgb(0, 136, 255);
   border-radius: 10px;
   position: relative;
 }
@@ -68,7 +68,7 @@ body {
   display: flex;
   right: 0;
   top: 50%;
-  background-color: rgb(1, 75, 139);
+  background-color: rgb(12, 126, 226);
   position: absolute;
   transform: translateY(-50%);
 }
@@ -103,7 +103,7 @@ body {
   max-width: 75px;
   display: none;
   cursor: pointer;
-  transition: ease-in-out;
+  transition: display 1s ease 1s;
 }
 
 .time {

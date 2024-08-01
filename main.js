@@ -4,6 +4,7 @@ const fs = require("node:fs");
 
 const supportedVideoExt = ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'webm'];
 const supportedAudioExt = ['mp3', 'm4a', 'ogg', 'wav', 'aac', 'flac', 'wma'];
+const userSystemDrive = process.platform === 'win32' ? process.env.SystemDrive + '/' : process.env.SystemDrive;
 
 const createWindow = () => {
     const mainWindow = new BrowserWindow({
@@ -76,6 +77,8 @@ function logicalCompare(a, b) {
 
         if (typeof tokenA === 'number' && typeof tokenB === 'number') {
             if (tokenA !== tokenB) return tokenA - tokenB;
+        } else if (typeof tokenA === 'string' && typeof tokenB === 'string') {
+            return tokenA.toLowerCase() < tokenB.toLowerCase() ? -1 : 1;
         } else if (tokenA !== tokenB) {
             return tokenA < tokenB ? -1 : 1;
         }
@@ -90,7 +93,7 @@ function getDirectoryInfo(folderPath) {
         let filteredDirectoryContents = directoryContents.map(content => {
             return isFolderOrFile(folderPath, content);
         }).filter(ele => ele !== undefined).sort((a, b) => logicalCompare(a.name, b.name));
-        if (path.resolve(folderPath) === path.resolve(process.env.SystemDrive + "/")) {
+        if (path.resolve(folderPath) === path.resolve(userSystemDrive)) {
             filteredDirectoryContents.unshift({
                 type: 'folder',
                 subType: 'HomeDrive',
@@ -119,18 +122,17 @@ app.whenReady().then(() => {
         let { canceled, filePaths } = await dialog.showOpenDialog({
             properties: ['openFile'],
             filters: [
-                { name: 'Movies', extensions: [...supportedVideoExt, ...supportedAudioExt] },
+                { name: 'media', extensions: [...supportedVideoExt, ...supportedAudioExt] },
             ]
         });
         if (!canceled) {
-            return filePaths.length ? filePaths[0] : false;
+            return filePaths.length ? { path: filePaths[0], name: path.basename(filePaths[0]) } : false;
         } else {
             return false;
         }
     });
 
     ipcMain.handle("get_home_drive", (event) => {
-        let userSystemDrive = process.platform === 'win32' ? process.env.SystemDrive + '/' : process.env.SystemDrive;
         return { type: 'drive', path: userSystemDrive };
     });
 

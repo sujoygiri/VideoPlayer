@@ -1,8 +1,8 @@
 const videoPlayerContainerNode = document.querySelector(".video_player_container");
 const videoPlayer = document.getElementById("videoPlayer");
 const videoPlayerControlPanel = document.querySelector(".video_player_control_container");
-const progressBarNode = document.querySelector(".progress_bar");
 const progressBarContainerNode = document.querySelector(".progressbar_container");
+const progressBarNode = document.querySelector(".progress_bar");
 const volumeControlContainerNode = document.querySelector(".volume_control");
 const volumeControlInputNode = document.querySelector(".volume_control input");
 const playlistPanelNode = document.querySelector(".playlist_items_container");
@@ -17,16 +17,33 @@ const browseContentListNode = document.querySelector(".browse_content_list");
 const browseContentListItemNode = document.querySelector(".browse_content_list ul");
 const currentPlayListNode = document.querySelector(".current_playlist_items");
 const currentPlayListItemsNode = document.querySelector(".current_playlist_items ul");
+const elapsedTimeNode = document.querySelector(".elapsed_time");
+const totalTimeNode = document.querySelector(".total_time");
+const previousMediaBtnNode = document.querySelector(".previous_video_btn");
+const nextMediaBtnNode = document.querySelector(".next_video_btn");
 
 let currentActivePlaylistItem = null;
 let browseFileListItem = null;
 let totalCurrentPlaylistItem = 0;
 let currentActivePlaylistItemIndex = 0;
+let chosenFileName = "";
 
 const audioFileIconPath = "./assets/icons/audio_file.svg";
 const videoFileIconPath = "./assets/icons/video_file.svg";
 const folderIconPath = "./assets/icons/folder.svg";
 
+function formatVideoTime(time) {
+    let second = Math.floor(time % 60);
+    let minute = Math.floor((time / 60) % 60);
+    let hour = Math.floor(time / 3600);
+    second = second >= 10 ? `${second}` : `0${second}`;
+    minute = minute >= 10 ? `${minute}` : `0${minute}`;
+    if (hour) {
+        hour = hour >= 10 ? `${hour}` : `0${hour}`;
+        return hour + ":" + minute + ":" + second;
+    }
+    return minute + ":" + second;
+}
 
 function handelVolume() {
     videoPlayer.volume = volumeControlInputNode.value = '' || 0.75;
@@ -51,11 +68,6 @@ function handelPlaylistPanel() {
     playlistPanelNode.addEventListener("mouseleave", () => {
         playlistPanelNode.style.display = "none";
     });
-    // videoPlayerContainerNode.addEventListener("click", () => {
-    //     if (playlistPanelNode.style.display === "block") {
-    //         playlistPanelNode.style.display = "none";
-    //     }
-    // });
 }
 
 function handelPlayPause() {
@@ -76,12 +88,16 @@ function handelPlayPause() {
 }
 
 function handelFileOpen() {
-    openFileContainerNode.addEventListener("click", async () => {
-        let chosenVideoPath = await window.electronAPI.chooseVideo();
-        if (chosenVideoPath) {
-            videoPlayer.src = chosenVideoPath;
+    openFileContainerNode.addEventListener("click", async (event) => {
+        let chosenVideo = await window.electronAPI.chooseVideo();
+        if (chosenVideo) {
+            videoPlayer.src = chosenVideo.path;
             await videoPlayer.play();
             playPauseBtnNode.src = './assets/icons/pause_circle.svg';
+            totalTimeNode.innerText = "";
+            totalTimeNode.innerText = formatVideoTime(videoPlayer.duration);
+            chosenFileName = chosenVideo.name;
+            await handelCurrentPlaylist(chosenVideo.path);
         }
     });
 }
@@ -89,14 +105,17 @@ function handelFileOpen() {
 function handelProgressBarUpdate() {
     videoPlayer.addEventListener("timeupdate", async () => {
         progressBarNode.style.width = (videoPlayer.currentTime / videoPlayer.duration) * 100 + '%';
+        elapsedTimeNode.innerText = "";
+        elapsedTimeNode.innerText = formatVideoTime(videoPlayer.currentTime);
         if (videoPlayer.currentTime === videoPlayer.duration && totalCurrentPlaylistItem > 1 && currentActivePlaylistItemIndex < totalCurrentPlaylistItem) {
             currentActivePlaylistItemIndex += 1;
-            await handelNextPlaylistItemPlay(currentActivePlaylistItemIndex);
+            await handelPlaylistItemPlay(currentActivePlaylistItemIndex);
         }
         if (videoPlayer.currentTime === videoPlayer.duration && (totalCurrentPlaylistItem <= 1 || currentActivePlaylistItemIndex === totalCurrentPlaylistItem)) {
             playPauseBtnNode.src = './assets/icons/play_circle.svg';
             progressBarNode.style.width = `0%`;
             await videoPlayer.pause();
+            elapsedTimeNode.innerText = "00:00";
         }
     });
 }
@@ -140,13 +159,45 @@ function handelControlPanelVisibility() {
     });
 }
 
-async function handelNextPlaylistItemPlay(nextPlaylistItemIndex) {
+async function handelPlaylistItemPlay(playlistItemIndex) {
     currentActivePlaylistItem.classList.remove("active_playlist_file");
-    currentActivePlaylistItem = currentPlayListItemsNode.childNodes[nextPlaylistItemIndex];
+    currentActivePlaylistItem = currentPlayListItemsNode.childNodes[playlistItemIndex];
     videoPlayer.src = currentActivePlaylistItem.dataset.path;
     await videoPlayer.play();
     playPauseBtnNode.src = './assets/icons/pause_circle.svg';
+    totalTimeNode.innerText = "";
+    totalTimeNode.innerText = formatVideoTime(videoPlayer.duration);
     currentActivePlaylistItem.classList.add("active_playlist_file");
+}
+
+function updatePreviousAndNextBtnState() {
+    if (currentActivePlaylistItemIndex === 0) {
+        previousMediaBtnNode.style.cursor = "not-allowed";
+    } else {
+        previousMediaBtnNode.style.cursor = "pointer";
+    }
+    if (currentActivePlaylistItemIndex === totalCurrentPlaylistItem) {
+        nextMediaBtnNode.style.cursor = "not-allowed";
+    } else {
+        nextMediaBtnNode.style.cursor = "pointer";
+    }
+}
+
+function handelPreviousAndNextPlay() {
+    previousMediaBtnNode.addEventListener("click", async () => {
+        if (currentActivePlaylistItemIndex > 0) {
+            currentActivePlaylistItemIndex -= 1;
+            await handelPlaylistItemPlay(currentActivePlaylistItemIndex);
+        }
+        updatePreviousAndNextBtnState();
+    });
+    nextMediaBtnNode.addEventListener("click", async () => {
+        if (currentActivePlaylistItemIndex < totalCurrentPlaylistItem) {
+            currentActivePlaylistItemIndex += 1;
+            await handelPlaylistItemPlay(currentActivePlaylistItemIndex);
+        }
+        updatePreviousAndNextBtnState();
+    });
 }
 
 async function handelCurrentPlaylist(filePath) {
@@ -160,16 +211,14 @@ async function handelCurrentPlaylist(filePath) {
     currentPlayListItemsNode.innerHTML = playlistContentItems;
     currentPlayListItemsNode.childNodes.forEach((listItem, index) => {
         let { name } = listItem.childNodes[0].parentElement.dataset;
-        if (name === browseFileListItem.dataset.name) {
+        if (name === (browseFileListItem?.dataset?.name || chosenFileName)) {
             listItem.childNodes[0].parentElement.classList.add("active_playlist_file");
             currentActivePlaylistItem = listItem.childNodes[0].parentElement;
             currentActivePlaylistItemIndex = index;
         }
-        // console.log(listItem.childNodes[0].parentElement.classList);
-        // console.log(currentActivePlaylistItem);
         listItem.addEventListener("click", async (event) => {
-            let type = event.currentTarget.dataset.type;
-            let subType = event.currentTarget.dataset.subtype;
+            // let type = event.currentTarget.dataset.type;
+            // let subType = event.currentTarget.dataset.subtype;
             let currentPath = event.currentTarget.dataset.path;
             currentActivePlaylistItem.classList.remove("active_playlist_file");
             currentActivePlaylistItem = event.target.parentElement;
@@ -180,8 +229,11 @@ async function handelCurrentPlaylist(filePath) {
             videoPlayer.src = currentPath;
             await videoPlayer.play();
             playPauseBtnNode.src = './assets/icons/pause_circle.svg';
+            totalTimeNode.innerText = "";
+            totalTimeNode.innerText = formatVideoTime(videoPlayer.duration);
         });
     });
+    updatePreviousAndNextBtnState();
 }
 
 async function handelBrowse(currentPath) {
@@ -206,6 +258,8 @@ async function handelBrowse(currentPath) {
                 await videoPlayer.play();
                 playPauseBtnNode.src = './assets/icons/pause_circle.svg';
                 browseFileListItem = event.target.parentElement;
+                totalTimeNode.innerText = "";
+                totalTimeNode.innerText = formatVideoTime(videoPlayer.duration);
                 await handelCurrentPlaylist(currentPath);
             }
             // event.preventDefault();
@@ -253,7 +307,8 @@ function main() {
     handelControlPanelVisibility();
     loadDriveInfo();
     loadPlaylistNavigation();
+    handelPreviousAndNextPlay();
 }
 
 main();
-console.log(window.electronAPI);
+

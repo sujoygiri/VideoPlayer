@@ -1,6 +1,8 @@
 const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const path = require('node:path');
 const fs = require("node:fs");
+const childProcess = require("node:child_process");
+
 
 const supportedVideoExt = ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'webm'];
 const supportedAudioExt = ['mp3', 'm4a', 'ogg', 'wav', 'aac', 'flac', 'wma'];
@@ -87,18 +89,16 @@ function logicalCompare(a, b) {
 }
 
 function getDirectoryInfo(folderPath) {
-    // let parentFolderPath = path.dirname(folderPath);
     try {
-        let directoryContents = fs.readdirSync(folderPath);
+        let directoryContents = fs.readdirSync(path.resolve(folderPath));
         let filteredDirectoryContents = directoryContents.map(content => {
             return isFolderOrFile(folderPath, content);
         }).filter(ele => ele !== undefined).sort((a, b) => logicalCompare(a.name, b.name));
-        if (path.resolve(folderPath) === path.resolve(userSystemDrive)) {
+        if (path.resolve(folderPath) === path.resolve(path.dirname(folderPath))) {
             filteredDirectoryContents.unshift({
                 type: 'folder',
-                subType: 'HomeDrive',
-                name: '..',
-                path: folderPath
+                subType: 'driveList',
+                name: '>'
             });
         } else {
             filteredDirectoryContents.unshift({
@@ -111,6 +111,37 @@ function getDirectoryInfo(folderPath) {
         return filteredDirectoryContents;
     } catch (error) {
         console.log(error.message);
+    }
+}
+
+function getDriveInfo() {
+    let userDevice = process.platform;
+    switch (userDevice) {
+        case 'win32': {
+            let driveInfo = childProcess.execSync("wmic logicaldisk get name");
+            let allDrives = driveInfo.toString("utf8").replaceAll('\r\r\n', '').split(" ").filter(value => {
+                return value !== '';
+            });
+            allDrives.shift();
+            if (allDrives.length) {
+                return allDrives.map(drive => {
+                    return {
+                        name: drive,
+                        path: drive + '/'
+                    };
+                });
+            }
+            break;
+        };
+        case 'linux': {
+            let driveInfo = childProcess.execSync("df -h");
+            break;
+        };
+        case 'darwin': {
+
+        }
+        default:
+            break;
     }
 }
 
@@ -133,7 +164,8 @@ app.whenReady().then(() => {
     });
 
     ipcMain.handle("get_home_drive", (event) => {
-        return { type: 'drive', path: userSystemDrive };
+        let allDrives = getDriveInfo();
+        return { type: 'drive', drives: allDrives };
     });
 
     ipcMain.handle("get_directory_info", (event, currentPath) => {

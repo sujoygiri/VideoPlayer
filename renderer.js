@@ -249,7 +249,7 @@ async function handelBrowse(currentPath) {
             let type = event.currentTarget.dataset.type;
             let subType = event.currentTarget.dataset.subtype;
             let currentPath = event.currentTarget.dataset.path;
-            if (subType === 'HomeDrive' && type === "folder") {
+            if (subType === 'driveList' && type === "folder") {
                 loadDriveInfo();
             } else if (type === 'folder') {
                 await handelBrowse(currentPath);
@@ -272,14 +272,14 @@ function loadDriveInfo() {
     let browseContentListItems = "";
     browseContentListItemNode.innerHTML = "";
     window.electronAPI.getHomeDrive().then(driveObj => {
-        browseContentListItems += `<li class="drive_path">
-            <span><img src="${driveIconPath}"></span>
-            <span>${driveObj.path}</span> 
-        </li>`;
+        driveObj.drives.forEach(drive => {
+            browseContentListItems += `<li class="drive_path" data-path="${drive.path}"><span><img src="${driveIconPath}"></span><span>${drive.name}</span> </li>`;
+        });
         browseContentListItemNode.innerHTML = browseContentListItems;
         browseContentListItemNode.childNodes.forEach(childNode => {
-            childNode.addEventListener("click", async () => {
-                await handelBrowse(driveObj.path);
+            childNode.addEventListener("click", async (event) => {
+                let path = event.currentTarget.dataset.path;
+                await handelBrowse(path);
             });
         });
     });

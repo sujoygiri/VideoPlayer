@@ -21,6 +21,8 @@ const elapsedTimeNode = document.querySelector(".elapsed_time");
 const totalTimeNode = document.querySelector(".total_time");
 const previousMediaBtnNode = document.querySelector(".previous_video_btn");
 const nextMediaBtnNode = document.querySelector(".next_video_btn");
+const fullscreenBtn = document.querySelector(".fullscreen_btn");
+
 
 let currentActivePlaylistItem = null;
 let browseFileListItem = null;
@@ -296,6 +298,19 @@ function loadPlaylistNavigation() {
     });
 }
 
+function handelFullscreen() {
+    const fullScreenBtnImageNode = document.querySelector(".fullscreen_btn img");
+    fullscreenBtn.addEventListener("click", () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+            fullScreenBtnImageNode.src = './assets/icons/close_fullscreen.svg';
+        } else if (document.exitFullscreen) {
+            document.exitFullscreen();
+            fullScreenBtnImageNode.src = './assets/icons/open_in_full.svg';
+        }
+    });
+}
+
 function main() {
     handelVolumeControlBtn();
     handelPlaylistPanel();
@@ -308,6 +323,7 @@ function main() {
     loadDriveInfo();
     loadPlaylistNavigation();
     handelPreviousAndNextPlay();
+    handelFullscreen();
 }
 
 main();

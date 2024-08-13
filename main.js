@@ -2,7 +2,6 @@ const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const path = require('node:path');
 const fs = require("node:fs");
 const childProcess = require("node:child_process");
-const ffmpeg = require("fluent-ffmpeg");
 require('dotenv').config({ debug: true });
 
 
@@ -15,12 +14,20 @@ const createWindow = () => {
         minWidth: 800,
         minHeight: 600,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js')
+            preload: path.join(__dirname, 'preload.js'),
+            devTools: true,
         }
     });
     mainWindow.loadFile('index.html');
     // Open the DevTools.
     // mainWindow.webContents.openDevTools()
+    // mainWindow.on("focus", (event) => {
+    //     console.log('window focused');
+    //     console.log(event);
+    // });
+    // mainWindow.on("blur", (event) => {
+    //     console.log('window blur');
+    // });
 };
 
 function isSupportedMediaFile(filePath) {
@@ -147,39 +154,10 @@ function getDriveInfo() {
     }
 }
 
-function extractMetadata() {
-    let filePath = path.join(__dirname, './assets/video.mkv');
-    ffmpeg.ffprobe(filePath, (err, metaData) => {
-        if (!err) {
-            const subtitleStream = metaData.streams.filter(stream => stream.codec_type === 'subtitle');
-            console.log(subtitleStream);
-            subtitleStream.forEach(subtitle => {
-                ffmpeg(filePath)
-                    .outputOptions([`-map 0:s:${subtitle.index}?`, '-c:s webvtt'])
-                    .output(`./assets/subtitle/${subtitle.tags.title}.vtt`)
-                    .on('end', () => {
-                        console.log(`Subtitles have been extracted to ${subtitle.tags.title}.vtt`);
-                        // let fileBuffer = fs.readFileSync(`./assets/subtitle/${subtitle.tags.title}.vtt`);
-                        // fs.writeFileSync(`./assets/subtitle/${subtitle.tags.title}utf.vtt`, Buffer.from(fileBuffer, 'binary').toString('utf8'));
-                    })
-                    .on('error', (err) => {
-                        console.error('Error extracting subtitles:', err);
-                    })
-                    .run();
-
-            });
-        }
-        else {
-            console.log(err);
-        }
-    });
-}
-
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-    // extractMetadata();
     ipcMain.handle("choose_video", async (event) => {
         let { canceled, filePaths } = await dialog.showOpenDialog({
             properties: ['openFile'],

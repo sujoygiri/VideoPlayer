@@ -49,7 +49,7 @@ function formatVideoTime(time) {
 }
 
 function handelVolume() {
-    videoPlayer.volume = volumeControlInputNode.value = '' || 0.75;
+    volumeControlInputNode.value = videoPlayer.volume = '' || 0.75;
     volumeControlInputNode.addEventListener("input", (event) => {
         videoPlayer.volume = window.Number.parseFloat(event.target.value);
     });
@@ -80,12 +80,14 @@ async function playPauseMedia() {
         window.clearTimeout(timeoutId);
         timeoutId = window.setTimeout(() => {
             videoPlayerControlPanel.style.visibility = "hidden";
+            videoPlayerContainerNode.style.cursor = "none";
         }, 3000);
     } else {
         window.clearTimeout(timeoutId);
         await videoPlayer.pause();
         playPauseBtnNode.src = './assets/icons/play_circle.svg';
         videoPlayerControlPanel.style.visibility = "unset";
+        videoPlayerContainerNode.style.cursor = "unset";
     }
 }
 
@@ -136,8 +138,10 @@ function seekListener(event) {
 
 function handelVideoSeek() {
     progressBarContainerNode.addEventListener("click", seekListener);
-    progressBarContainerNode.addEventListener("mousedown", () => {
-        progressBarContainerNode.addEventListener("mousemove", seekListener);
+    progressBarContainerNode.addEventListener("mousedown", (event) => {
+        if (event.which === 1 || event.button === 0) {
+            progressBarContainerNode.addEventListener("mousemove", seekListener);
+        }
     });
     document.addEventListener("mouseup", () => {
         progressBarContainerNode.removeEventListener("mousemove", seekListener);
@@ -359,12 +363,13 @@ function handelGlobalShortcutKey() {
         }
     });
     document.addEventListener("wheel", (event) => {
-        if (event.deltaY > 0 && videoPlayer.volume >= 0) {
-            // videoPlayer.volume -= 0.1;
+        if (event.deltaY > 0) {
+            let decreasedVolume = Number.parseFloat(Number(videoPlayer.volume - 0.05).toFixed(2));
+            volumeControlInputNode.value = videoPlayer.volume = decreasedVolume < 0 ? 0 : decreasedVolume;
         }
-        if (event.deltaY < 0 && videoPlayer.volume <= 1) {
-            // videoPlayer.volume += 0.1;
-            console.log(videoPlayer.volume);
+        if (event.deltaY < 0) {
+            let increasedVolume = Number.parseFloat(Number(videoPlayer.volume + 0.05).toFixed(2));
+            volumeControlInputNode.value = videoPlayer.volume = increasedVolume > 1 ? 1 : increasedVolume;
         }
     });
 }

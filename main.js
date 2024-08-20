@@ -4,10 +4,8 @@ const fs = require("node:fs");
 const childProcess = require("node:child_process");
 require('dotenv').config({ debug: true });
 
-
 const supportedVideoExt = ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'webm'];
 const supportedAudioExt = ['mp3', 'm4a', 'ogg', 'wav', 'aac', 'flac', 'wma'];
-const userSystemDrive = process.platform === 'win32' ? process.env.SystemDrive + '/' : process.env.SystemDrive;
 
 const createWindow = () => {
     const mainWindow = new BrowserWindow({
@@ -154,10 +152,17 @@ function getDriveInfo() {
     }
 }
 
+function extractSubtitle(mediaPath) {
+    let mediaInfo = childProcess.execSync('mediainfo --Output=JSON video.exe', { cwd: './assets/ffmpeg-bin', encoding: 'utf-8' });
+    console.log(JSON.parse(mediaInfo)['media']['track'][0]);
+
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+    extractSubtitle('');
     ipcMain.handle("choose_video", async (event) => {
         let { canceled, filePaths } = await dialog.showOpenDialog({
             properties: ['openFile'],
